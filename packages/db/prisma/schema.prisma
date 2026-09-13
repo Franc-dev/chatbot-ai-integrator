@@ -1,0 +1,411 @@
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// ---------------------------------------------------------------------------
+// Better Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[] @relation("Inviter")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Organization {
+  id          String       @id
+  name        String
+  slug        String       @unique
+  logo        String?
+  createdAt   DateTime     @default(now())
+  metadata    String?
+  members     Member[]
+  invitations Invitation[]
+  profile     OrganizationProfile?
+
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  createdAt      DateTime     @default(now())
+  inviter        User         @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+
+model Apikey {
+  id                 String    @id
+  name               String?
+  start              String?
+  prefix             String?
+  key                String
+  referenceId        String
+  configId           String    @default("default")
+  refillInterval     Int?
+  refillAmount       Int?
+  lastRefillAt       DateTime?
+  enabled            Boolean   @default(true)
+  rateLimitEnabled   Boolean   @default(true)
+  rateLimitTimeWindow Int?
+  rateLimitMax       Int?
+  requestCount       Int       @default(0)
+  remaining          Int?
+  lastRequest        DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  permissions        String?
+  metadata           String?
+
+  @@index([referenceId])
+  @@index([configId])
+  @@index([key])
+  @@map("apikey")
+}
+
+// ---------------------------------------------------------------------------
+// Signal domain
+// ---------------------------------------------------------------------------
+
+model OrganizationProfile {
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  monthlyMessageCap  Int          @default(10000)
+  visitorRatePerMin  Int          @default(20)
+  allowedOrigins     String[]     @default([])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model ProviderCredential {
+  id          String   @id @default(cuid())
+  orgId       String
+  provider    String
+  label       String
+  ciphertext  Bytes
+  iv          Bytes
+  tag         Bytes
+  keyVersion  Int      @default(1)
+  last4       String
+  fingerprint String
+  baseUrl     String?
+  zaiMode     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  agents      Agent[]
+
+  @@unique([orgId, fingerprint])
+  @@index([orgId, provider])
+}
+
+model ModelCatalog {
+  id              String   @id @default(cuid())
+  provider        String
+  modelId         String
+  displayName     String
+  inputPerMToken  Int
+  outputPerMToken Int
+  contextWindow   Int?
+  capabilities    Json?
+  syncedAt        DateTime @default(now())
+
+  @@unique([provider, modelId])
+}
+
+model Agent {
+  id            String               @id @default(cuid())
+  orgId         String
+  name          String
+  slug          String
+  description   String?
+  systemPrompt  String               @default("You are a helpful assistant for this company.")
+  modelRef      String               @default("openai/gpt-4.1-mini")
+  credentialId  String?
+  credential    ProviderCredential?  @relation(fields: [credentialId], references: [id])
+  temperature   Float                @default(0.4)
+  maxSteps      Int                  @default(6)
+  greeting      String?
+  placeholder   String?
+  theme         Json?
+  published     Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  versions      AgentVersion[]
+  tools         AgentTool[]
+  sources       KnowledgeSource[]
+  conversations Conversation[]
+  installations WidgetInstallation[]
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+}
+
+model AgentVersion {
+  id        String   @id @default(cuid())
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  snapshot  Json
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
+}
+
+model Tool {
+  id          String      @id @default(cuid())
+  orgId       String
+  name        String
+  description String
+  method      String      @default("POST")
+  url         String
+  headers     Json?
+  parameters  Json
+  secretName  String?
+  enabled     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  agents      AgentTool[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+model AgentTool {
+  agentId String
+  toolId  String
+  agent   Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tool    Tool  @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, toolId])
+}
+
+model KnowledgeSource {
+  id          String           @id @default(cuid())
+  orgId       String
+  agentId     String?
+  agent       Agent?           @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  kind        String
+  title       String
+  uri         String?
+  status      String           @default("queued")
+  error       String?
+  chunkCount  Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  chunks      KnowledgeChunk[]
+
+  @@index([orgId])
+  @@index([agentId])
+}
+
+model KnowledgeChunk {
+  id        String          @id @default(cuid())
+  sourceId  String
+  source    KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  orgId     String
+  content   String
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime        @default(now())
+
+  @@index([sourceId])
+  @@index([orgId])
+}
+
+model Conversation {
+  id          String    @id @default(cuid())
+  orgId       String
+  agentId     String
+  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  visitorId   String
+  userHash    String?
+  title       String?
+  status      String    @default("open")
+  lead        Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
+  usageEvents UsageEvent[]
+
+  @@index([orgId, agentId])
+  @@index([visitorId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  parts          Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+model UsageEvent {
+  id             String        @id @default(cuid())
+  orgId          String
+  agentId        String
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  provider       String
+  model          String
+  inputTokens    Int           @default(0)
+  outputTokens   Int           @default(0)
+  cachedTokens   Int           @default(0)
+  reasoningTokens Int          @default(0)
+  costMicros     Int           @default(0)
+  latencyMs      Int           @default(0)
+  status         String        @default("ok")
+  source         String        @default("widget")
+  createdAt      DateTime      @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([agentId, createdAt])
+}
+
+model UsageDaily {
+  id             String   @id @default(cuid())
+  orgId          String
+  day            DateTime @db.Date
+  messages       Int      @default(0)
+  inputTokens    Int      @default(0)
+  outputTokens   Int      @default(0)
+  costMicros     BigInt   @default(0)
+  errors         Int      @default(0)
+
+  @@unique([orgId, day])
+}
+
+model WidgetInstallation {
+  id        String   @id @default(cuid())
+  orgId     String
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  origin    String
+  lastSeen  DateTime @default(now())
+
+  @@unique([agentId, origin])
+}
+
+model PublishableKey {
+  id        String   @id @default(cuid())
+  orgId     String
+  agentId   String?
+  prefix    String   @default("pk")
+  keyHash   String   @unique
+  start     String
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  status      String    @default("queued")
+  runAt       DateTime  @default(now())
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  lockedAt    DateTime?
+  lockedBy    String?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, runAt])
+}

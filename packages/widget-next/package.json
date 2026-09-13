@@ -1,0 +1,20 @@
+{
+  "name": "@signal/widget-next",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "peerDependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0"
+  },
+  "dependencies": {
+    "@signal/widget-react": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "typescript": "^5.9.2"
+  }
+}

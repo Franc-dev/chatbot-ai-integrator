@@ -1,0 +1,47 @@
+{
+  "name": "@signal/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@better-auth/api-key": "^1.7.4",
+    "@opentelemetry/api": "^1.9.0",
+    "@signal/contract": "workspace:*",
+    "@signal/core": "workspace:*",
+    "@signal/db": "workspace:*",
+    "@signal/jobs": "workspace:*",
+    "@signal/ui": "workspace:*",
+    "@signal/widget-core": "workspace:*",
+    "@vercel/functions": "^2.2.13",
+    "ai": "^5.0.60",
+    "better-auth": "1.7.4",
+    "hono": "^4.9.8",
+    "lucide-react": "^0.544.0",
+    "next": "16.3.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "sonner": "^2.0.7",
+    "vaul": "^1.1.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

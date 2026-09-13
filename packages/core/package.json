@@ -1,0 +1,37 @@
+{
+  "name": "@signal/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./crypto": "./src/crypto/vault.ts",
+    "./providers": "./src/providers/index.ts",
+    "./agent": "./src/agent/runtime.ts",
+    "./builtins": "./src/agent/builtins.ts",
+    "./metering": "./src/metering/cost.ts",
+    "./rag": "./src/rag/retrieve.ts",
+    "./ssrf": "./src/tools/ssrf.ts",
+    "./env": "./src/env.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.17",
+    "@ai-sdk/gateway": "^1.0.29",
+    "@ai-sdk/openai": "^2.0.32",
+    "@ai-sdk/openai-compatible": "^1.0.19",
+    "@openrouter/ai-sdk-provider": "^1.2.0",
+    "@prisma/client": "6.19.0",
+    "@signal/contract": "workspace:*",
+    "@signal/db": "workspace:*",
+    "ai": "^5.0.60",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

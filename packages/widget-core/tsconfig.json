@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig/library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

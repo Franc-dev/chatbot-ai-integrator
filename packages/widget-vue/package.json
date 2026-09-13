@@ -1,0 +1,19 @@
+{
+  "name": "@signal/widget-vue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "dependencies": {
+    "@signal/widget-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vue": "^3.5.21"
+  }
+}

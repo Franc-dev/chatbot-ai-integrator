@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@import "@signal/ui/styles.css";
+
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+html,
+body {
+  font-family: var(--font-sans);
+  font-synthesis: none;
+}
+
+html.app-lock,
+html.app-lock body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.tabular,
+code,
+pre {
+  font-family: var(--font-mono), ui-monospace, Consolas, monospace;
+}
+
+nav svg,
+aside svg,
+header svg {
+  fill: none;
+  stroke: currentColor;
+  flex-shrink: 0;
+}

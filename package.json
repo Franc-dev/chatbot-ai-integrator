@@ -1,0 +1,22 @@
+{
+  "name": "signal-console",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "turbo dev --filter=@signal/web",
+    "dev:db": "pnpm --filter @signal/db dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @signal/db generate",
+    "db:migrate": "pnpm --filter @signal/db migrate",
+    "db:push": "pnpm --filter @signal/db push",
+    "widget:build": "pnpm --filter @signal/widget-core build && node scripts/copy-embed.mjs"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.2"
+  }
+}
