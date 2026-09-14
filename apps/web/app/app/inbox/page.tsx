@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Button } from "@signal/ui";
+import { Button, Loader } from "@signal/ui";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { DeskTranscript } from "@/components/desk-thread";
@@ -157,7 +157,9 @@ export default function InboxPage() {
         </header>
         <ul className="min-h-0 flex-1 overflow-y-auto">
           {loading ? (
-            <li className="px-5 py-8 text-[14px] text-[var(--mute)]">Pulling threads…</li>
+            <li className="px-5 py-10">
+              <Loader size={56} label="pulling threads…" showLabel className="w-full" />
+            </li>
           ) : null}
           {!loading && !visible.length ? (
             <li className="px-5 py-8">

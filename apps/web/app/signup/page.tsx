@@ -48,7 +48,7 @@ export default function SignupPage() {
           <Field label="Password">
             <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" minLength={8} required />
           </Field>
-          <Button disabled={busy} type="submit">
+          <Button loading={busy} type="submit">
             {busy ? "Creating…" : "Create workspace"}
           </Button>
         </div>

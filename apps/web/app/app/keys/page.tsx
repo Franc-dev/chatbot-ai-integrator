@@ -176,7 +176,7 @@ export default function KeysPage() {
           </Field>
         </div>
         <div className="flex justify-end border-t border-[#2c3038] bg-[#101217] px-5 py-4 sm:px-6">
-          <Button type="submit" disabled={busy} className="min-w-[9rem]">
+          <Button type="submit" loading={busy} className="min-w-[9rem]">
             {busy ? "Saving…" : "Save key"}
           </Button>
         </div>
@@ -418,7 +418,7 @@ function VaultRow({ cred, onChanged }: { cred: Cred; onChanged: () => Promise<vo
             />
           </Field>
           <div className="mt-3 flex gap-2">
-            <Button type="submit" size="sm" disabled={busy}>
+            <Button type="submit" size="sm" loading={busy}>
               {busy ? "Rotating…" : "Save rotation"}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setRotating(false)}>
@@ -442,7 +442,7 @@ function VaultRow({ cred, onChanged }: { cred: Cred; onChanged: () => Promise<vo
             />
           </Field>
           <div className="mt-3 flex gap-2">
-            <Button type="submit" size="sm" disabled={busy}>
+            <Button type="submit" size="sm" loading={busy}>
               {busy ? "Saving…" : "Save models"}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setEditingModels(false)}>

@@ -334,7 +334,7 @@ export default function InstallPage() {
                   />
                 </Field>
               </div>
-              <Button className="mt-5" type="button" disabled={saving} onClick={() => void save()}>
+              <Button className="mt-5" type="button" loading={saving} onClick={() => void save()}>
                 {saving ? "Saving…" : "Save widget settings"}
               </Button>
             </section>
@@ -351,7 +351,7 @@ export default function InstallPage() {
                 </Link>{" "}
                 so the widget fetches config again.
               </p>
-              <Button className="mt-4" type="button" disabled={minting} onClick={() => void mint()}>
+              <Button className="mt-4" type="button" loading={minting} onClick={() => void mint()}>
                 {minting ? "Minting…" : "Mint publishable key"}
               </Button>
               {minted ? (

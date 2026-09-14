@@ -160,7 +160,7 @@ export function ModelPicker({
                 autoCapitalize="off"
                 autoCorrect="off"
               />
-              <Button type="submit" variant="ghost" disabled={busy || !draft.trim()}>
+              <Button type="submit" variant="ghost" loading={busy} disabled={!draft.trim()}>
                 {busy ? "Saving…" : "Use"}
               </Button>
             </div>

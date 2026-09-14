@@ -295,7 +295,7 @@ export default function KnowledgePage() {
             <p className="max-w-xs text-[12px] leading-5 text-[var(--mute)] sm:text-right">
               {kindMeta?.hint}
             </p>
-            <Button type="submit" disabled={busy} className="min-w-[11rem]">
+            <Button type="submit" loading={busy} className="min-w-[11rem]">
               {busy ? "Queuing…" : "Add to knowledge"}
             </Button>
           </div>

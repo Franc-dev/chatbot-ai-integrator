@@ -7,6 +7,7 @@ import {
   Button,
   Field,
   Input,
+  LoaderPane,
   SELECT_NONE,
   Select,
   SelectContent,
@@ -224,9 +225,7 @@ export default function AgentBenchPage() {
   }
 
   if (!agent) {
-    return (
-      <div className="grid h-full place-items-center text-[14px] text-[var(--mute)]">Loading playground…</div>
-    );
+    return <LoaderPane label="loading playground…" />;
   }
 
   const credential = creds.find((row) => row.id === agent.credentialId);
@@ -249,7 +248,7 @@ export default function AgentBenchPage() {
           <span className={`tabular text-[11px] ${busy ? "text-[var(--live)]" : "text-[var(--mute)]"}`}>
             {busy ? "● stream" : "Ready"}
           </span>
-          <Button type="button" size="sm" disabled={saving} onClick={() => void save()}>
+          <Button type="button" size="sm" loading={saving} onClick={() => void save()}>
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>

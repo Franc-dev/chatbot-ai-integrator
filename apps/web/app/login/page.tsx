@@ -32,7 +32,7 @@ export default function LoginPage() {
           <Field label="Password">
             <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
           </Field>
-          <Button disabled={busy} type="submit">
+          <Button loading={busy} type="submit">
             {busy ? "Signing in…" : "Sign in"}
           </Button>
         </div>
