@@ -1,7 +1,7 @@
 # Signal Console — agent notes
 
 - Next.js App Router. **No server actions.** Mutations go through Hono at `/api/*`.
-- Prisma 6.19 with `prisma-client-js` (classic generator). Import the client from `@signal/db`.
+- Prisma 6.19 with `prisma-client-js`, `engineType = "client"` (no Rust engine). Connections go through the `@prisma/adapter-pg` driver adapter, so any new `PrismaClient` needs one. Import the client from `@signal/db`.
 - Tenant queries must use `forOrg(orgId)` or include `orgId` in `where`.
 - Provider keys are sealed with AES-256-GCM (`@signal/core` vault). Never return plaintext.
 - z.ai has two endpoints: general `/api/paas/v4` vs coding `/api/coding/paas/v4`. Do not guess.

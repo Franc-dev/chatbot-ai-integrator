@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "./client.mjs";
 
 async function main() {
   const ext = await prisma.$queryRaw`SELECT extname FROM pg_extension WHERE extname = 'vector'`;

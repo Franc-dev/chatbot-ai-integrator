@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "./client.mjs";
 
 await prisma.$executeRawUnsafe(`
   CREATE INDEX IF NOT EXISTS knowledge_chunk_embedding_hnsw
