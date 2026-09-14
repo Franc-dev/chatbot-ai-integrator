@@ -1,3 +1,4 @@
+/** @jsxImportSource preact */
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export type WidgetProps = {

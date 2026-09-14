@@ -19,14 +19,36 @@
 
 ## First deploy
 
+Vercel project root is the repo root. `vercel.json` pins the pnpm install, the Turbo
+build (which runs `prisma generate` first), and `apps/web/.next` as the output.
+
+The database needs the `vector` extension, so pick a Postgres that offers pgvector
+(Prisma Postgres, Neon, Supabase).
+
+`prisma/migrations/0001_init` is only the HNSW index, not a table baseline. Create the
+schema with `db push` against the production direct URL, once:
+
 ```bash
 pnpm install
 pnpm --filter @signal/db generate
-pnpm --filter @signal/db exec prisma migrate deploy
-pnpm --filter @signal/widget-core build
-# copy packages/widget-core/dist/embed*.js to apps/web/public/embed.js
+
+# point at production, not the local prisma dev instance
+$env:DATABASE_URL="<pooled url>"; $env:DIRECT_URL="<direct url>"
+pnpm --filter @signal/db exec prisma db push
+pnpm --filter @signal/db exec prisma db execute `
+  --file prisma/migrations/0001_init/migration.sql --schema prisma/schema.prisma
+
+pnpm widget:build
+vercel link
 vercel --prod
 ```
+
+Set every env var below in the Vercel project first; `getEnv()` throws at boot when one
+is missing. `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must be the deployed origin, or
+sign-in cookies and the widget snippet point at localhost.
+
+A custom OpenAI-compatible credential pointing at `localhost` will not resolve from
+Vercel. Give the local server a public hostname or keep that agent on a hosted provider.
 
 ## Rotate the envelope key
 

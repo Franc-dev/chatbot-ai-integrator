@@ -1,3 +1,4 @@
+/** @jsxImportSource preact */
 import { render } from "preact";
 import { WidgetApp, type WidgetProps } from "./app";
 import { widgetCss } from "./styles";
