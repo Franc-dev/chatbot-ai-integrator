@@ -19,8 +19,11 @@
 
 ## First deploy
 
-Vercel project root is the repo root. `vercel.json` pins the pnpm install, the Turbo
-build (which runs `prisma generate` first), and `apps/web/.next` as the output.
+Vercel's **Root Directory** must be `apps/web`, otherwise framework detection fails with
+"No Next.js version detected" — the repo root has no `next` dependency. `apps/web/vercel.json`
+then steps back up to the workspace root for both install and build, so pnpm links the whole
+monorepo and Turbo runs `prisma generate` before `next build`. `packages/db` also carries a
+`postinstall` that generates the client, so any `pnpm install` leaves usable Prisma types.
 
 The database needs the `vector` extension, so pick a Postgres that offers pgvector
 (Prisma Postgres, Neon, Supabase).
