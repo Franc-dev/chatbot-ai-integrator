@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "turbo dev --filter=@signal/web",
     "dev:db": "pnpm --filter @signal/db dev",
-    "build": "turbo build",
+    "build": "pnpm --filter @signal/db generate && turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
