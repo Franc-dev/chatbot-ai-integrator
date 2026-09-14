@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { formatUsd } from "@/lib/money";
 import { useEffect, useLayoutEffect, useState } from "react";
 import {
   BookOpen,
@@ -81,6 +82,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const flush = path === "/app/inbox" || /^\/app\/agents\/[^/]+$/.test(path);
   const nav = <NavList path={path} org={org} usage={usage} onNavigate={() => setMenuOpen(false)} />;
 
   return (
@@ -103,7 +105,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Menu size={18} strokeWidth={1.75} />
           </button>
         </header>
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8 lg:px-12">
+        <main
+          className={
+            flush
+              ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+              : "min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8 lg:px-12"
+          }
+        >
           {children}
         </main>
       </div>
@@ -174,7 +182,7 @@ function NavList({
         <p className="truncate text-[13px] leading-5">{org}</p>
         <p className="mt-1 tabular text-[12px] leading-5 text-[var(--live)]">
           {usage
-            ? `${usage.messages} messages · $${((usage.costMicros ?? 0) / 1_000_000).toFixed(4)}`
+            ? `${usage.messages} messages · ${formatUsd(usage.costMicros ?? 0)}`
             : "Usage appears after the first chat"}
         </p>
       </div>

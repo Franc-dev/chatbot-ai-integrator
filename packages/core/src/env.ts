@@ -10,6 +10,7 @@ const envSchema = z.object({
   ENCRYPTION_KEY: z.string().min(16),
   JOB_DRAIN_SECRET: z.string().min(16),
   OPENAI_API_KEY: z.string().optional(),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -183,6 +183,7 @@ model ProviderCredential {
   fingerprint String
   baseUrl     String?
   zaiMode     String?
+  models      String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   agents      Agent[]

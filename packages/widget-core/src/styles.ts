@@ -58,7 +58,7 @@ button { color: inherit; }
   display: flex; flex-direction: column;
   background:
     radial-gradient(120% 70% at 0% -8%, color-mix(in oklab, var(--sig-accent) 20%, transparent), transparent 46%),
-    linear-gradient(180deg, #171a22 0%, var(--sig-bg) 42%);
+    linear-gradient(180deg, var(--sig-panel) 0%, var(--sig-bg) 42%);
   color: var(--sig-fg);
   border: 1px solid color-mix(in oklab, var(--sig-line) 80%, white 8%);
   border-radius: 22px;

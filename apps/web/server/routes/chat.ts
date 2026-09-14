@@ -1,16 +1,19 @@
 import type { Context } from "hono";
 import { chatRequestSchema } from "@signal/contract";
 import { prisma } from "@signal/db";
-import { runAgentStream } from "@signal/core";
+import { publicProviderError, runAgentStream } from "@signal/core";
 import { deny } from "../authz";
 
 export async function handleChat(
   c: Context,
   orgId: string,
   source: "playground" | "widget" | "mgmt",
+  boundAgentId?: string,
 ) {
   const body = chatRequestSchema.parse(await c.req.json());
-  const agent = await prisma.agent.findFirst({ where: { id: body.agentId, orgId } });
+  const agent = await prisma.agent.findFirst({
+    where: { id: boundAgentId || body.agentId, orgId },
+  });
   if (!agent) return deny(c, "not_found", "Agent not found", 404);
 
   const profile = await prisma.organizationProfile.findUnique({
@@ -53,15 +56,20 @@ export async function handleChat(
     });
   }
 
-  const result = await runAgentStream({
-    orgId,
-    agentId: agent.id,
-    conversationId: conversation.id,
-    messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
-    source,
-  });
+  try {
+    const result = await runAgentStream({
+      orgId,
+      agentId: agent.id,
+      conversationId: conversation.id,
+      messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
+      source,
+    });
 
-  return result.toUIMessageStreamResponse({
-    headers: { "x-conversation-id": conversation.id },
-  });
+    return result.toUIMessageStreamResponse({
+      headers: { "x-conversation-id": conversation.id },
+      onError: (error) => publicProviderError(error),
+    });
+  } catch (error) {
+    return deny(c, "provider_error", publicProviderError(error), 502);
+  }
 }

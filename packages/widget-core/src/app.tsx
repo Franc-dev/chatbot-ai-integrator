@@ -6,7 +6,27 @@ export type WidgetProps = {
   visitorId?: string;
 };
 
+type WidgetTheme = { accent?: string; bg?: string; fg?: string; panel?: string };
+
+type WidgetCfg = {
+  name: string;
+  greeting?: string | null;
+  placeholder?: string | null;
+  agentId: string;
+  theme?: { widget?: WidgetTheme };
+};
+
 type Msg = { role: "user" | "assistant"; content: string; at: number };
+
+function themeVars(widget?: WidgetTheme) {
+  if (!widget) return undefined;
+  const style: { [key: `--${string}`]: string } = {};
+  if (widget.accent) style["--sig-accent"] = widget.accent;
+  if (widget.bg) style["--sig-bg"] = widget.bg;
+  if (widget.fg) style["--sig-fg"] = widget.fg;
+  if (widget.panel) style["--sig-panel"] = widget.panel;
+  return Object.keys(style).length ? style : undefined;
+}
 
 function visitor() {
   const key = "sig_vid";
@@ -50,7 +70,7 @@ function IconSend() {
 export function WidgetApp(props: WidgetProps) {
   const apiBase = props.apiBase ?? "";
   const [open, setOpen] = useState(false);
-  const [cfg, setCfg] = useState<{ name: string; greeting?: string | null; placeholder?: string | null; agentId: string } | null>(null);
+  const [cfg, setCfg] = useState<WidgetCfg | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -146,7 +166,22 @@ export function WidgetApp(props: WidgetProps) {
             const data = line.slice(5).trim();
             if (!data || data === "[DONE]") continue;
             try {
-              const json = JSON.parse(data) as { type?: string; delta?: string; text?: string };
+              const json = JSON.parse(data) as {
+                type?: string;
+                delta?: string;
+                text?: string;
+                errorText?: string;
+              };
+              if (json.type === "error" || json.errorText) {
+                assistant = json.errorText?.trim() || "The model provider rejected this request.";
+                setMessages((m) => {
+                  const copy = [...m];
+                  const last = copy[copy.length - 1];
+                  if (last) copy[copy.length - 1] = { ...last, role: "assistant", content: assistant };
+                  return copy;
+                });
+                continue;
+              }
               const piece = json.delta ?? json.text ?? "";
               if (piece) {
                 assistant += piece;
@@ -158,15 +193,23 @@ export function WidgetApp(props: WidgetProps) {
                 });
               }
             } catch {
-              assistant += data;
-              setMessages((m) => {
-                const copy = [...m];
-                const last = copy[copy.length - 1];
-                if (last) copy[copy.length - 1] = { ...last, role: "assistant", content: assistant };
-                return copy;
-              });
+              /* ignore keep-alives */
             }
           }
+        }
+        if (!assistant.trim()) {
+          setMessages((m) => {
+            const copy = [...m];
+            const last = copy[copy.length - 1];
+            if (last && !last.content) {
+              copy[copy.length - 1] = {
+                ...last,
+                role: "assistant",
+                content: "The model did not reply. Check the credential and provider credits.",
+              };
+            }
+            return copy;
+          });
         }
       }
     } catch (e) {
@@ -178,7 +221,7 @@ export function WidgetApp(props: WidgetProps) {
   }
 
   return (
-    <div class="wrap">
+    <div class="wrap" style={themeVars(cfg?.theme?.widget)}>
       {open ? (
         <section class="panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
           <header class="head">

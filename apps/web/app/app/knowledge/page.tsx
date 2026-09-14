@@ -25,6 +25,7 @@ type Source = {
   chunkCount: number;
   error: string | null;
   agentId: string | null;
+  uri: string | null;
 };
 
 type Agent = { id: string; name: string };
@@ -45,6 +46,10 @@ function isUrlKind(kind: string) {
   return kind === "url" || kind === "sitemap";
 }
 
+function looksLikeUrl(uri?: string | null) {
+  return !!uri && /^https?:\/\//i.test(uri.trim());
+}
+
 function usesEditor(kind: string) {
   return kind === "text" || kind === "faq";
 }
@@ -60,6 +65,7 @@ export default function KnowledgePage() {
   const [fileName, setFileName] = useState("");
   const [editorKey, setEditorKey] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [repairUri, setRepairUri] = useState<Record<string, string>>({});
 
   async function load() {
     const [k, a] = await Promise.all([
@@ -114,6 +120,24 @@ export default function KnowledgePage() {
       toast.error(err instanceof Error ? err.message : "Could not add source");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function reindex(source: Source) {
+    const nextUri = (repairUri[source.id] ?? source.uri ?? "").trim();
+    if (isUrlKind(source.kind) && !looksLikeUrl(nextUri)) {
+      toast.error("Paste the page URL, then index again.");
+      return;
+    }
+    try {
+      await api(`/api/v1/knowledge/${source.id}/reindex`, {
+        method: "POST",
+        body: JSON.stringify({ uri: nextUri || undefined }),
+      });
+      toast.success("Queued again.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not reindex");
     }
   }
 
@@ -287,9 +311,12 @@ export default function KnowledgePage() {
         </div>
         {sources.length ? (
           <ul className="mt-5 divide-y divide-[var(--line)] overflow-hidden rounded-sm border border-[var(--line)]">
-            {sources.map((s) => (
-              <li key={s.id} className="flex items-center justify-between bg-[#101217] px-5 py-4">
-                <div>
+            {sources.map((s) => {
+              const missingUrl = isUrlKind(s.kind) && !looksLikeUrl(s.uri);
+              const canRetry = s.status === "error" || (s.status === "ready" && s.chunkCount === 0);
+              return (
+              <li key={s.id} className="flex flex-col gap-3 bg-[#101217] px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <p className="text-[16px]">{s.title}</p>
                   <p className="mt-0.5 text-[13px] text-[var(--mute)]">
                     {KIND_LABEL[s.kind] ?? s.kind} · {s.chunkCount} passages
@@ -298,14 +325,40 @@ export default function KnowledgePage() {
                       : " · all agents"}
                     {s.error ? ` · ${s.error}` : ""}
                   </p>
+                  {missingUrl && canRetry ? (
+                    <div className="mt-3 max-w-md">
+                      <Input
+                        value={repairUri[s.id] ?? ""}
+                        onChange={(e) => setRepairUri((current) => ({ ...current, [s.id]: e.target.value }))}
+                        placeholder="https://example.com/about"
+                        inputMode="url"
+                        className="h-10 tabular text-[13px]"
+                        aria-label={`URL for ${s.title}`}
+                      />
+                    </div>
+                  ) : looksLikeUrl(s.uri) ? (
+                    <p className="mt-1 truncate text-[12px] tabular text-[var(--mute)]">{s.uri}</p>
+                  ) : null}
                 </div>
-                <span
-                  className={`tabular text-[13px] ${s.status === "ready" ? "text-[var(--live)]" : "text-[var(--mute)]"}`}
-                >
-                  {s.status}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  {canRetry ? (
+                    <button
+                      type="button"
+                      className="text-[13px] text-[var(--accent)]"
+                      onClick={() => void reindex(s)}
+                    >
+                      Index again
+                    </button>
+                  ) : null}
+                  <span
+                    className={`tabular text-[13px] ${s.status === "ready" && s.chunkCount > 0 ? "text-[var(--live)]" : "text-[var(--mute)]"}`}
+                  >
+                    {s.status}
+                  </span>
+                </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         ) : (
           <div className="mt-5 rounded-sm border border-dashed border-[#2c3038] px-5 py-8">

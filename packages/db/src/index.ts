@@ -16,6 +16,11 @@ export function forOrg<T extends { orgId: string }>(orgId: string) {
   return { orgId } satisfies Pick<T, "orgId">;
 }
 
+export {
+  readCredentialModelsByOrg,
+  readCustomCredentialModels,
+  writeCredentialModels,
+} from "./credential-models";
 export { Prisma, PrismaClient } from "@prisma/client";
 export type {
   Agent,

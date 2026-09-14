@@ -39,5 +39,5 @@ pub.get("/widget/:key", (c) => widgetConfig(c));
 pub.post("/chat", async (c) => {
   const ctx = await publishableOrg(c);
   if (!ctx) return deny(c, "invalid_key", "Publishable key rejected");
-  return handleChat(c, ctx.orgId, "widget");
+  return handleChat(c, ctx.orgId, "widget", ctx.agentId);
 });

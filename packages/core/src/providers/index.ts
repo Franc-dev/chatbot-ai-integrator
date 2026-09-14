@@ -1,4 +1,5 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGateway } from "@ai-sdk/gateway";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -13,21 +14,47 @@ const ZAI_URLS = {
   coding: "https://api.z.ai/api/coding/paas/v4",
 } as const;
 
+const KNOWN_PROVIDERS: ProviderKind[] = [
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "vercel-gateway",
+  "zai",
+  "custom",
+];
+
 export function parseModelRef(ref: string): { provider: ProviderKind; model: string } {
   const [provider, ...rest] = ref.split("/");
   const model = rest.join("/") || provider || "gpt-4.1-mini";
-  const known: ProviderKind[] = [
-    "openai",
-    "anthropic",
-    "openrouter",
-    "vercel-gateway",
-    "zai",
-    "custom",
-  ];
-  if (provider && known.includes(provider as ProviderKind)) {
+  if (provider && KNOWN_PROVIDERS.includes(provider as ProviderKind)) {
     return { provider: provider as ProviderKind, model };
   }
   return { provider: "openai", model: ref };
+}
+
+/** Model id sent to the provider API (strips a known `provider/` prefix). */
+export function modelIdFromRef(ref: string): string {
+  const [head, ...rest] = ref.split("/");
+  if (head && KNOWN_PROVIDERS.includes(head as ProviderKind) && rest.length) {
+    return rest.join("/");
+  }
+  return ref;
+}
+
+/**
+ * Chat routing: a custom vault key always uses its OpenAI-compatible base URL.
+ * A `custom/…` modelRef never inherits z.ai / OpenAI default URLs.
+ */
+export function routeChatProvider(
+  modelRef: string,
+  credProvider?: string | null,
+): { provider: ProviderKind; model: string } {
+  const parsed = parseModelRef(modelRef);
+  if (credProvider === "custom" || parsed.provider === "custom") {
+    return { provider: "custom", model: modelIdFromRef(modelRef) };
+  }
+  return parsed;
 }
 
 export async function resolveApiKey(orgId: string, credentialId?: string | null) {
@@ -42,8 +69,8 @@ export async function resolveApiKey(orgId: string, credentialId?: string | null)
 }
 
 export async function resolveModel(orgId: string, modelRef: string, credentialId?: string | null) {
-  const { provider, model } = parseModelRef(modelRef);
   const cred = await resolveApiKey(orgId, credentialId);
+  const { provider, model } = routeChatProvider(modelRef, cred?.provider);
 
   switch (provider) {
     case "openai": {
@@ -53,6 +80,12 @@ export async function resolveModel(orgId: string, modelRef: string, credentialId
     case "anthropic": {
       const anthropic = createAnthropic({ apiKey: cred?.apiKey });
       return anthropic(model);
+    }
+    case "google": {
+      const google = createGoogleGenerativeAI({
+        apiKey: cred?.apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      });
+      return google(model);
     }
     case "openrouter": {
       const openrouter = createOpenRouter({ apiKey: cred?.apiKey });
@@ -72,14 +105,47 @@ export async function resolveModel(orgId: string, modelRef: string, credentialId
       return zai(model);
     }
     case "custom": {
+      if (cred?.provider && cred.provider !== "custom") {
+        throw new Error("Pick the Custom OpenAI-compatible vault key for this model.");
+      }
+      if (!cred?.baseUrl) {
+        throw new Error("This custom model needs a vault key with a base URL.");
+      }
       const custom = createOpenAICompatible({
         name: "custom",
-        apiKey: cred?.apiKey,
-        baseURL: cred?.baseUrl ?? "https://api.openai.com/v1",
+        apiKey: cred.apiKey,
+        baseURL: cred.baseUrl,
       });
       return custom(model);
     }
   }
+}
+
+export function publicProviderError(error: unknown): string {
+  if (!error) return "The model provider rejected this request.";
+  const err = error as {
+    message?: string;
+    statusCode?: number;
+    data?: { error?: { message?: string } };
+    responseBody?: string;
+  };
+  const nested = err.data?.error?.message;
+  if (typeof nested === "string" && nested.trim()) return nested;
+  if (typeof err.responseBody === "string") {
+    try {
+      const parsed = JSON.parse(err.responseBody) as { error?: { message?: string } };
+      if (parsed.error?.message) return parsed.error.message;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (typeof err.message === "string" && err.message && !/api[_-]?key/i.test(err.message)) {
+    return err.message;
+  }
+  if (err.statusCode === 402) {
+    return "This provider is out of credits. Add credits or switch the agent credential.";
+  }
+  return "The model provider rejected this request.";
 }
 
 export { ZAI_URLS };
